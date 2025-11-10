@@ -790,6 +790,15 @@ You are an expert MCQ question generator for AFNS test preparation.
 
 Generate exactly $numberOfQuestions multiple choice questions for the topic "$topicName" in the subject "$category".
 
+CRITICAL JSON FORMATTING RULES:
+1. Use ONLY ASCII characters - NO Unicode symbols like √, π, etc.
+2. For square root, write "sqrt(65)" instead of "√65"
+3. For mathematical expressions, use simple text: "x squared" instead of "x²"
+4. DO NOT use quotes inside question text or options
+5. DO NOT use newlines or line breaks
+6. Keep all text on single lines
+7. Escape all special characters properly
+
 Requirements:
 1. Each question must be relevant to the topic and subject
 2. Each question must have exactly 4 options (A, B, C, D)
@@ -797,7 +806,7 @@ Requirements:
 4. Include brief explanations for each answer
 5. Questions should be suitable for competitive exam preparation
 
-Return ONLY a valid JSON array in this exact format:
+Return ONLY a valid JSON array in this exact format (NO markdown, NO code blocks):
 [
   {
     "question": "Question text here?",
@@ -808,9 +817,10 @@ Return ONLY a valid JSON array in this exact format:
 ]
 
 Important:
-- correctAnswerIndex must be 0, 1, 2, or 3 (corresponding to options array index)
+- correctAnswerIndex must be 0, 1, 2, or 3
 - Return ONLY the JSON array, no other text
-- Make sure all questions are unique and relevant
+- Use simple ASCII text only - NO special Unicode characters
+- For math: use "sqrt()" not "√", use "pi" not "π"
 ''';
 
       final response = await model.generateContent([Content.text(prompt)]);
@@ -836,9 +846,118 @@ Important:
       }
       jsonText = jsonText.trim();
 
-      // Parse JSON
-      final List<dynamic> jsonList = json.decode(jsonText) as List<dynamic>;
+      // Try to find JSON array in the response
+      int jsonStart = jsonText.indexOf('[');
+      int jsonEnd = jsonText.lastIndexOf(']');
+      
+      if (jsonStart != -1 && jsonEnd != -1 && jsonEnd > jsonStart) {
+        jsonText = jsonText.substring(jsonStart, jsonEnd + 1);
+      }
 
+      // Better JSON repair function
+      String repairJson(String json) {
+        StringBuffer result = StringBuffer();
+        bool inString = false;
+        bool escapeNext = false;
+        
+        for (int i = 0; i < json.length; i++) {
+          String char = json[i];
+          
+          if (escapeNext) {
+            // If we're escaping, just add the character
+            result.write(char);
+            escapeNext = false;
+            continue;
+          }
+          
+          if (char == '\\') {
+            escapeNext = true;
+            result.write(char);
+            continue;
+          }
+          
+          if (char == '"' && !escapeNext) {
+            inString = !inString;
+            result.write(char);
+            continue;
+          }
+          
+          if (inString) {
+            // Inside string: escape control characters but keep Unicode
+            if (char == '\n' || char == '\r' || char == '\t') {
+              result.write(' '); // Replace with space
+            } else if (char == '"') {
+              result.write('\\"'); // Escape quote
+            } else {
+              result.write(char); // Keep other characters including Unicode
+            }
+          } else {
+            // Outside string: normalize whitespace
+            if (char == '\n' || char == '\r' || char == '\t') {
+              result.write(' ');
+            } else {
+              result.write(char);
+            }
+          }
+        }
+        
+        return result.toString().replaceAll(RegExp(r'\s+'), ' ');
+      }
+
+      // Parse JSON with better error handling
+      List<dynamic> jsonList;
+      try {
+        jsonList = json.decode(jsonText) as List<dynamic>;
+      } catch (parseError) {
+        print('JSON Parse Error: $parseError');
+        print('JSON Text length: ${jsonText.length}');
+        
+        // Try to repair JSON
+        try {
+          String repairedJson = repairJson(jsonText);
+          jsonList = json.decode(repairedJson) as List<dynamic>;
+          print('JSON parsed successfully after repair');
+        } catch (repairError) {
+          print('Repair also failed: $repairError');
+          
+          // Last resort: Extract valid questions one by one
+          try {
+            List<Map<String, dynamic>> validQuestions = [];
+            String remaining = jsonText;
+            
+            // Try to extract each question object separately
+            int questionStart = remaining.indexOf('{');
+            while (questionStart != -1) {
+              int questionEnd = remaining.indexOf('}', questionStart);
+              if (questionEnd == -1) break;
+              
+              String questionJson = remaining.substring(questionStart, questionEnd + 1);
+              
+              try {
+                Map<String, dynamic> question = json.decode(questionJson) as Map<String, dynamic>;
+                if (question.containsKey('question') && question.containsKey('options')) {
+                  validQuestions.add(question);
+                }
+              } catch (e) {
+                // Skip invalid question
+                print('Skipped invalid question: $e');
+              }
+              
+              questionStart = remaining.indexOf('{', questionEnd + 1);
+            }
+            
+            if (validQuestions.isNotEmpty) {
+              jsonList = validQuestions;
+              print('Extracted ${validQuestions.length} valid questions');
+            } else {
+              throw Exception('Could not extract any valid questions from response');
+            }
+          } catch (extractError) {
+            print('Extraction also failed: $extractError');
+            throw Exception('Failed to parse AI response. Please try generating questions again.');
+          }
+        }
+      }
       // Save questions to Firebase
       int savedCount = 0;
       for (var questionData in jsonList) {
@@ -851,14 +970,50 @@ Important:
         
         final questionJson = questionData as Map<String, dynamic>;
         final questionId = databaseRef!.child('questions').push().key!;
+  // Clean question text and options to remove any problematic characters
+        String questionText = (questionJson['question'] ?? '').toString()
+            .replaceAll('\n', ' ')
+            .replaceAll('\r', ' ')
+            .replaceAll('\t', ' ')
+            .trim();
 
+              List<String> options = [];
+        if (questionJson['options'] != null && questionJson['options'] is List) {
+          final optionsList = questionJson['options'] as List;
+          for (var opt in optionsList) {
+            String cleanOption = opt.toString()
+                .replaceAll('\n', ' ')
+                .replaceAll('\r', ' ')
+                .replaceAll('\t', ' ')
+                .trim();
+            if (cleanOption.isNotEmpty) {
+              options.add(cleanOption);
+            }
+          }
+        }
+           // Ensure exactly 4 options
+        while (options.length < 4) {
+          options.add('');
+        }
+        if (options.length > 4) {
+          options = options.sublist(0, 4);
+        }
+          String? explanation = questionJson['explanation']?.toString()
+            .replaceAll('\n', ' ')
+            .replaceAll('\r', ' ')
+            .replaceAll('\t', ' ')
+            .trim();
+        
+        if (explanation != null && explanation.isEmpty) {
+          explanation = null;
+        }
         final question = QuestionModel(
           id: questionId,
           testId: testId,
-          question: questionJson['question'] ?? '',
-          options: List<String>.from(questionJson['options'] ?? []),
+          question: questionText,
+          options: options,
           correctAnswerIndex: questionJson['correctAnswerIndex'] ?? 0,
-          explanation: questionJson['explanation'],
+          explanation: explanation,
         );
 
         await databaseRef!
