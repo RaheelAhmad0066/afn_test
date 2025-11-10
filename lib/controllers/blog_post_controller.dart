@@ -11,7 +11,12 @@ import '../models/question_model.dart';
 class BlogPostController extends GetxController {
   // Firebase Database Reference - lazy initialization
   DatabaseReference? _databaseRef;
-  
+  var primaryColor = Colors.purple;
+  var textColor = Colors.black;
+  var lightTextColor = Colors.grey.shade700;
+  var bgColor = Colors.white;
+  var appPadding = 16.0;    
+  var isDeletingTopic=false.obs;
   DatabaseReference? get databaseRef {
     if (_databaseRef == null) {
       try {
@@ -66,52 +71,126 @@ class BlogPostController extends GetxController {
   // Form Controllers
   final searchController = TextEditingController();
 
-  // Categories - Make it observable
-  final RxList<String> categories = <String>[
-    'Biology',
-    'Chemistry',
-    'Physics',
-    'Math',
-    'Intelligence',
-  ].obs;
+  // Categories - Load from Firebase
+  final RxList<String> categories = <String>[].obs;
 
-  // Add loading state for topic deletion
-  final RxBool isDeletingTopic = false.obs;
-  final RxBool isDeletingTest = false.obs;
+  // Load categories from Firebase
+  Future<void> loadCategories() async {
+    if (!isFirebaseAvailable) {
+      // Default categories if Firebase not available
+      if (categories.isEmpty) {
+        categories.value = ['Biology', 'Chemistry', 'Physics', 'Math', 'Intelligence'];
+      }
+      return;
+    }
+    
+    try {
+      final snapshot = await databaseRef!.child('categories').get();
+      
+      if (snapshot.exists) {
+        final data = snapshot.value;
+        if (data is List) {
+          categories.value = data.map((e) => e.toString()).toList();
+        } else if (data is Map) {
+          categories.value = data.values.map((e) => e.toString()).toList();
+        }
+      } else {
+        // Initialize with default categories
+        if (categories.isEmpty) {
+          final defaultCategories = ['Biology', 'Chemistry', 'Physics', 'Math', 'Intelligence'];
+          categories.value = defaultCategories;
+          
+          // Save to Firebase
+          for (var category in defaultCategories) {
+            await databaseRef!.child('categories').push().set(category);
+          }
+        }
+      }
+    } catch (e) {
+      print('Error loading categories: $e');
+      // Fallback to default
+      if (categories.isEmpty) {
+        categories.value = ['Biology', 'Chemistry', 'Physics', 'Math', 'Intelligence'];
+      }
+    }
+  }
 
-  // Add custom category
-  void addCustomCategory(String categoryName) {
+  // Add custom category to Firebase
+  Future<void> addCustomCategory(String categoryName) async {
     if (categoryName.trim().isEmpty) {
-      Get.snackbar('Error', 'Category name cannot be empty');
+      if (!isClosed) {
+        Get.snackbar('Error', 'Category name cannot be empty');
+      }
       return;
     }
     if (categories.contains(categoryName.trim())) {
-      Get.snackbar('Info', 'Category already exists');
+      if (!isClosed) {
+        Get.snackbar('Info', 'Category already exists');
+      }
       return;
     }
-    categories.add(categoryName.trim());
-    Get.snackbar('Success', 'Category added successfully');
+    
+    try {
+      if (isFirebaseAvailable) {
+        await databaseRef!.child('categories').push().set(categoryName.trim());
+      }
+      categories.add(categoryName.trim());
+      if (!isClosed) {
+        Get.snackbar('Success', 'Category added successfully');
+      }
+    } catch (e) {
+      if (!isClosed) {
+        Get.snackbar('Error', 'Failed to add category: $e');
+      }
+    }
   }
 
-  // Delete category
-  void deleteCategory(String categoryName) {
+  // Delete category from Firebase
+  Future<void> deleteCategory(String categoryName) async {
     if (categories.length <= 1) {
-      Get.snackbar('Error', 'Cannot delete. At least one category is required');
+      if (!isClosed) {
+        Get.snackbar('Error', 'Cannot delete. At least one category is required');
+      }
       return;
     }
-    categories.remove(categoryName);
-    Get.snackbar('Success', 'Category deleted successfully');
+    
+    try {
+      if (isFirebaseAvailable) {
+        final snapshot = await databaseRef!.child('categories').get();
+        if (snapshot.exists) {
+          final data = snapshot.value as Map<dynamic, dynamic>;
+          for (var entry in data.entries) {
+            if (entry.value == categoryName) {
+              await databaseRef!.child('categories').child(entry.key).remove();
+              break;
+            }
+          }
+        }
+      }
+      categories.remove(categoryName);
+      if (!isClosed) {
+        Get.snackbar('Success', 'Category deleted successfully');
+      }
+    } catch (e) {
+      if (!isClosed) {
+        Get.snackbar('Error', 'Failed to delete category: $e');
+      }
+    }
   }
 
   // Create custom topic manually
   Future<void> createCustomTopic(String topicName, String category) async {
     if (!isFirebaseAvailable) {
-      Get.snackbar('Error', 'Firebase is not available');
+      if (!isClosed) {
+        Get.snackbar('Error', 'Firebase is not available');
+      }
       return;
     }
     
     if (topicName.trim().isEmpty) {
-      Get.snackbar('Error', 'Please enter topic name');
+      if (!isClosed) {
+        Get.snackbar('Error', 'Please enter topic name');
+      }
       return;
     }
 
@@ -128,10 +207,14 @@ class BlogPostController extends GetxController {
 
       await databaseRef!.child('topics').child(topicId).set(topic.toJson());
 
-      Get.snackbar('Success', 'Topic created successfully!');
+      if (!isClosed) {
+        Get.snackbar('Success', 'Topic created successfully!');
+      }
       loadTopics();
     } catch (e) {
-      Get.snackbar('Error', 'Failed to create topic: $e');
+      if (!isClosed) {
+        Get.snackbar('Error', 'Failed to create topic: $e');
+      }
     } finally {
       isLoadingTopics.value = false;
     }
@@ -140,7 +223,9 @@ class BlogPostController extends GetxController {
   // Delete all topics in selected category
   Future<void> deleteAllTopicsInCategory(String category) async {
     if (!isFirebaseAvailable) {
-      Get.snackbar('Error', 'Firebase is not available');
+      if (!isClosed) {
+        Get.snackbar('Error', 'Firebase is not available');
+      }
       return;
     }
     
@@ -564,7 +649,7 @@ Important:
       }
     }
   }
-
+  final RxBool isDeletingTest = false.obs;
   Future<void> deleteTest(String testId, String topicId) async {
     try {
       if (isClosed) return;
@@ -1254,57 +1339,175 @@ Important:
   }
 
   void _showTestCountDialog(BlogPostController controller, TopicModel topic) {
-    int selectedTestCount = 5;
+    final selectedTestCount = ValueNotifier<int>(5);
     
     Get.dialog(
-      AlertDialog(
-        title: Text('Select Number of Tests'),
-        content: StatefulBuilder(
-          builder: (context, setState) {
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('How many tests do you want to create for "${topic.name}"?'),
-                SizedBox(height: 20),
-                RadioListTile<int>(
-                  title: Text('5 Tests'),
-                  value: 5,
-                  groupValue: selectedTestCount,
-                  onChanged: (value) {
-                    setState(() {
-                      selectedTestCount = value!;
-                    });
-                  },
-                ),
-                RadioListTile<int>(
-                  title: Text('10 Tests'),
-                  value: 10,
-                  groupValue: selectedTestCount,
-                  onChanged: (value) {
-                    setState(() {
-                      selectedTestCount = value!;
-                    });
-                  },
-                ),
-              ],
-            );
-          },
+      Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: Text('Cancel'),
+        child: Container(
+          padding: EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: primaryColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.quiz,
+                  color: Colors.purple,
+                  size: 32,
+                ),
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Create Tests',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'How many tests for "${topic.name}"?',
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 24),
+              ValueListenableBuilder<int>(
+                valueListenable: selectedTestCount,
+                builder: (context, value, child) {
+                  return Column(
+                    children: [
+                      _buildTestOption(
+                        '5 Tests',
+                        5,
+                        value,
+                        selectedTestCount,
+                        Icons.looks_5,
+                      ),
+                      SizedBox(height: 12),
+                      _buildTestOption(
+                        '10 Tests',
+                        10,
+                        value,
+                        selectedTestCount,
+                        Icons.looks_6,
+                      ),
+                    ],
+                  );
+                },
+              ),
+              SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      selectedTestCount.dispose();
+                      Get.back();
+                    },
+                    child: Text('Cancel'),
+                  ),
+                  SizedBox(width: 12),
+                  ValueListenableBuilder<int>(
+                    valueListenable: selectedTestCount,
+                    builder: (context, testCount, child) {
+                      return ElevatedButton(
+                        onPressed: () {
+                          final count = testCount;
+                          selectedTestCount.dispose();
+                          Get.back();
+                          
+                          controller.createTestsWithQuestions(
+                            topic.id,
+                            topic.name,
+                            topic.category,
+                            count,
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Text('Create Tests'),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              controller.loadTests(topic.id);
-              controller.createTestsWithQuestions(topic.id, topic.name, topic.category, selectedTestCount);
-              Get.back();
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-            child: Text('Create Tests', style: TextStyle(color: Colors.white)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTestOption(
+    String label,
+    int value,
+    int selectedValue,
+    ValueNotifier<int> notifier,
+    IconData icon,
+  ) {
+    final isSelected = value == selectedValue;
+    return InkWell(
+      onTap: () => notifier.value = value,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.purple.withOpacity(0.1) : Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? Colors.purple : Colors.grey.shade300,
+            width: isSelected ? 2 : 1,
           ),
-        ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isSelected ? Colors.purple : Colors.grey.shade300,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+            SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                  color: isSelected ? primaryColor : textColor,
+                ),
+              ),
+            ),
+            if (isSelected)
+              Icon(
+                Icons.check_circle,
+                color: primaryColor,
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -1339,11 +1542,13 @@ Important:
       );
     }
     
+    // Load categories from Firebase
+    loadCategories();
+    
     // Only load topics if Firebase is available
     if (isFirebaseAvailable) {
       loadTopics();
     } else {
-      // Defer snackbar until after build is complete
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!isClosed) {
           Get.snackbar(

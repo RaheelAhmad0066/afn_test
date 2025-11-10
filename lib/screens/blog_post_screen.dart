@@ -51,54 +51,118 @@ class BlogPostScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(right: BorderSide(color: Colors.grey.shade200)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade100,
+            blurRadius: 4,
+            offset: Offset(2, 0),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          // Create Topic Section
+          // Create Topic Section - Improved Design
           Container(
             padding: EdgeInsets.all(appPadding),
             decoration: BoxDecoration(
-              color: primaryColor.withOpacity(0.1),
+              gradient: LinearGradient(
+                colors: [
+                  primaryColor.withOpacity(0.1),
+                  primaryColor.withOpacity(0.05),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Generate Topics',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: textColor,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Generate Topics',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: textColor,
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.settings, color: primaryColor),
+                      onPressed: () => _showCategoryManagementDialog(controller),
+                      tooltip: 'Manage Categories',
+                    ),
+                  ],
                 ),
                 SizedBox(height: 16),
-                // Subject Dropdown - Simple version
-                Obx(() => DropdownButtonFormField<String>(
-                      value: controller.selectedCategory.value,
-                      decoration: InputDecoration(
-                        labelText: 'Subject',
-                        border: OutlineInputBorder(),
-                        filled: true,
-                        fillColor: Colors.white,
+                // Subject Dropdown with Add Button
+                Row(
+                  children: [
+                    Expanded(
+                      child: Obx(() => DropdownButtonFormField<String>(
+                            value: controller.selectedCategory.value,
+                            decoration: InputDecoration(
+                              labelText: 'Subject',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: Colors.white,
+                              prefixIcon: Icon(Icons.category, color: primaryColor),
+                            ),
+                            items: controller.categories.map((category) {
+                              return DropdownMenuItem(
+                                value: category,
+                                child: Text(
+                                  category,
+                                  style: TextStyle(fontWeight: FontWeight.w500),
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              if (value != null) {
+                                controller.selectedCategory.value = value;
+                                controller.filterTopics();
+                              }
+                            },
+                          )),
+                    ),
+                    SizedBox(width: 8),
+                    // Add Category Button
+                    Container(
+                      decoration: BoxDecoration(
+                        color: primaryColor,
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      items: controller.categories.map((category) {
-                        return DropdownMenuItem(
-                          value: category,
-                          child: Text(category),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          controller.selectedCategory.value = value;
-                          controller.filterTopics();
-                        }
-                      },
-                    )),
+                      child: IconButton(
+                        icon: Icon(Icons.add, color: Colors.white),
+                        onPressed: () => _showAddCategoryDialog(controller),
+                        tooltip: 'Add Category',
+                      ),
+                    ),
+                  ],
+                ),
                 SizedBox(height: 12),
-                // Generate Topics with AI Button
-                Obx(() => SizedBox(
+                // Generate Topics with AI Button - Better Design
+                Obx(() => Container(
                       width: double.infinity,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        gradient: LinearGradient(
+                          colors: controller.isGeneratingTopics.value
+                              ? [Colors.grey.shade400, Colors.grey.shade500]
+                              : [purple, purple.withOpacity(0.8)],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: purple.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
                       child: ElevatedButton.icon(
                         onPressed: controller.isGeneratingTopics.value
                             ? null
@@ -111,14 +175,52 @@ class BlogPostScreen extends StatelessWidget {
                           controller.isGeneratingTopics.value
                               ? 'Generating...'
                               : 'Generate Topics with AI',
-                          style: TextStyle(color: Colors.white),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.purple,
-                          padding: EdgeInsets.symmetric(vertical: 14),
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
                     )),
+                SizedBox(height: 12),
+                Divider(height: 1),
+                SizedBox(height: 12),
+                // Custom Topic Creation - Better Design
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Or Create Custom Topic',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: lightTextColor,
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () => _showCustomTopicDialog(controller),
+                      icon: Icon(Icons.add_circle_outline, size: 18),
+                      label: Text('Add Topic'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -1216,6 +1318,319 @@ class BlogPostScreen extends StatelessWidget {
             },
           ),
         ],
+      ),
+    );
+  }
+
+  void _showAddCategoryDialog(BlogPostController controller) {
+    final categoryController = TextEditingController();
+    
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Container(
+          padding: EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Add New Category',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close),
+                    onPressed: () => Get.back(),
+                  ),
+                ],
+              ),
+              SizedBox(height: 20),
+              TextField(
+                controller: categoryController,
+                decoration: InputDecoration(
+                  labelText: 'Category Name',
+                  hintText: 'e.g., English, History',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+                  prefixIcon: Icon(Icons.category, color: primaryColor),
+                ),
+                autofocus: true,
+              ),
+              SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Get.back(),
+                    child: Text('Cancel'),
+                  ),
+                  SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (categoryController.text.trim().isNotEmpty) {
+                        controller.addCustomCategory(categoryController.text.trim());
+                        Get.back();
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text('Add'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showCustomTopicDialog(BlogPostController controller) {
+    final topicController = TextEditingController();
+    
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Container(
+          padding: EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Create Custom Topic',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close),
+                    onPressed: () => Get.back(),
+                  ),
+                ],
+              ),
+              SizedBox(height: 20),
+              TextField(
+                controller: topicController,
+                decoration: InputDecoration(
+                  labelText: 'Topic Name',
+                  hintText: 'e.g., Chapter 1: Introduction',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+                  prefixIcon: Icon(Icons.topic, color: primaryColor),
+                ),
+                autofocus: true,
+              ),
+              SizedBox(height: 16),
+              Obx(() => DropdownButtonFormField<String>(
+                value: controller.selectedCategory.value,
+                decoration: InputDecoration(
+                  labelText: 'Category',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+                  prefixIcon: Icon(Icons.category, color: primaryColor),
+                ),
+                items: controller.categories.map((category) {
+                  return DropdownMenuItem(
+                    value: category,
+                    child: Text(category),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    controller.selectedCategory.value = value;
+                  }
+                },
+              )),
+              SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Get.back(),
+                    child: Text('Cancel'),
+                  ),
+                  SizedBox(width: 12),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (topicController.text.trim().isNotEmpty) {
+                        controller.createCustomTopic(
+                          topicController.text.trim(),
+                          controller.selectedCategory.value,
+                        );
+                        Get.back();
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Text('Create'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showCategoryManagementDialog(BlogPostController controller) {
+    final categoryController = TextEditingController();
+    
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Container(
+          padding: EdgeInsets.all(24),
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Manage Categories',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close),
+                    onPressed: () => Get.back(),
+                  ),
+                ],
+              ),
+              SizedBox(height: 20),
+              TextField(
+                controller: categoryController,
+                decoration: InputDecoration(
+                  labelText: 'New Category Name',
+                  hintText: 'Enter category name',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+                  prefixIcon: Icon(Icons.add, color: primaryColor),
+                ),
+              ),
+              SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  if (categoryController.text.trim().isNotEmpty) {
+                    controller.addCustomCategory(categoryController.text.trim());
+                    categoryController.clear();
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  foregroundColor: Colors.white,
+                  minimumSize: Size(double.infinity, 48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text('Add Category'),
+              ),
+              SizedBox(height: 24),
+              Text(
+                'Existing Categories',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: textColor,
+                ),
+              ),
+              SizedBox(height: 12),
+              Obx(() => Container(
+                    constraints: BoxConstraints(maxHeight: 300),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: controller.categories.length,
+                      itemBuilder: (context, index) {
+                        final category = controller.categories[index];
+                        return Container(
+                          margin: EdgeInsets.only(bottom: 8),
+                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.category, color: primaryColor, size: 20),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  category,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                              ),
+                              if (controller.categories.length > 1)
+                                IconButton(
+                                  icon: Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                                  onPressed: () {
+                                    controller.deleteCategory(category);
+                                  },
+                                  padding: EdgeInsets.zero,
+                                  constraints: BoxConstraints(),
+                                ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  )),
+            ],
+          ),
+        ),
       ),
     );
   }
