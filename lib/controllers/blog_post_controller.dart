@@ -189,7 +189,7 @@ class BlogPostController extends GetxController {
     
     if (topicName.trim().isEmpty) {
       if (!isClosed) {
-        Get.snackbar('Error', 'Please enter topic name');
+      Get.snackbar('Error', 'Please enter topic name');
       }
       return;
     }
@@ -208,12 +208,12 @@ class BlogPostController extends GetxController {
       await databaseRef!.child('topics').child(topicId).set(topic.toJson());
 
       if (!isClosed) {
-        Get.snackbar('Success', 'Topic created successfully!');
+      Get.snackbar('Success', 'Topic created successfully!');
       }
       loadTopics();
     } catch (e) {
       if (!isClosed) {
-        Get.snackbar('Error', 'Failed to create topic: $e');
+      Get.snackbar('Error', 'Failed to create topic: $e');
       }
     } finally {
       isLoadingTopics.value = false;
@@ -426,32 +426,32 @@ Important:
       if (snapshot.exists) {
         final data = snapshot.value as Map<dynamic, dynamic>;
         if (!isClosed) {
-          topics.value = data.entries.map((entry) {
-            return TopicModel.fromJson(Map<String, dynamic>.from(entry.value));
-          }).toList();
+        topics.value = data.entries.map((entry) {
+          return TopicModel.fromJson(Map<String, dynamic>.from(entry.value));
+        }).toList();
 
-          topics.sort((a, b) {
-            if (a.category != b.category) {
-              return a.category.compareTo(b.category);
-            }
-            return a.name.compareTo(b.name);
-          });
+        topics.sort((a, b) {
+          if (a.category != b.category) {
+            return a.category.compareTo(b.category);
+          }
+          return a.name.compareTo(b.name);
+        });
 
-          filterTopics();
+        filterTopics();
         }
       } else {
         if (!isClosed) {
-          topics.clear();
-          filteredTopics.clear();
+        topics.clear();
+        filteredTopics.clear();
         }
       }
     } catch (e) {
       if (!isClosed) {
-        Get.snackbar('Error', 'Failed to load topics: $e');
+      Get.snackbar('Error', 'Failed to load topics: $e');
       }
     } finally {
       if (!isClosed) {
-        isLoadingTopics.value = false;
+      isLoadingTopics.value = false;
       }
     }
   }
@@ -528,12 +528,12 @@ Important:
       }
 
       if (!isClosed) {
-        Get.snackbar('Success', 'Topic deleted successfully!');
-        loadTopics();
+      Get.snackbar('Success', 'Topic deleted successfully!');
+      loadTopics();
       }
     } catch (e) {
       if (!isClosed) {
-        Get.snackbar('Error', 'Failed to delete topic: $e');
+      Get.snackbar('Error', 'Failed to delete topic: $e');
       }
     }
   }
@@ -564,11 +564,11 @@ Important:
       if (snapshot.exists) {
         final data = snapshot.value as Map<dynamic, dynamic>;
         if (!isClosed) {
-          tests.value = data.entries.map((entry) {
-            return TestModel.fromJson(Map<String, dynamic>.from(entry.value));
-          }).toList();
+        tests.value = data.entries.map((entry) {
+          return TestModel.fromJson(Map<String, dynamic>.from(entry.value));
+        }).toList();
 
-          tests.sort((a, b) => a.name.compareTo(b.name));
+        tests.sort((a, b) => a.name.compareTo(b.name));
           
           // Update topic test count in real-time
           final testCount = tests.length;
@@ -582,17 +582,17 @@ Important:
         }
       } else {
         if (!isClosed) {
-          tests.clear();
+        tests.clear();
         }
       }
     } catch (e) {
       print('Error loading tests: $e');
       if (!isClosed) {
-        Get.snackbar('Error', 'Failed to load tests: $e');
+      Get.snackbar('Error', 'Failed to load tests: $e');
       }
     } finally {
       if (!isClosed) {
-        isLoadingTests.value = false;
+      isLoadingTests.value = false;
       }
     }
   }
@@ -635,18 +635,18 @@ Important:
       }
 
       if (!isClosed) {
-        Get.snackbar('Success', 'Test created successfully!');
-        loadTests(topicId);
+      Get.snackbar('Success', 'Test created successfully!');
+      loadTests(topicId);
       }
     } catch (e) {
       print('Error creating test: $e');
       if (!isClosed) {
-        Get.snackbar('Error', 'Failed to create test: $e');
-      }
+      Get.snackbar('Error', 'Failed to create test: $e');
+    }
     } finally {
       if (!isClosed) {
         isLoadingTests.value = false;
-      }
+  }
     }
   }
   final RxBool isDeletingTest = false.obs;
@@ -694,12 +694,12 @@ Important:
       }
 
       if (!isClosed) {
-        Get.snackbar('Success', 'Test deleted successfully!');
-        loadTests(topicId);
+      Get.snackbar('Success', 'Test deleted successfully!');
+      loadTests(topicId);
       }
     } catch (e) {
       if (!isClosed) {
-        Get.snackbar('Error', 'Failed to delete test: $e');
+      Get.snackbar('Error', 'Failed to delete test: $e');
       }
     } finally {
       if (!isClosed) {
@@ -735,12 +735,12 @@ Important:
         // Questions already exist, just load them
         final data = snapshot.value as Map<dynamic, dynamic>;
         if (!isClosed) {
-          questions.value = data.entries.map((entry) {
-            return QuestionModel.fromJson(
-                Map<String, dynamic>.from(entry.value));
-          }).toList();
+        questions.value = data.entries.map((entry) {
+          return QuestionModel.fromJson(
+              Map<String, dynamic>.from(entry.value));
+        }).toList();
 
-          questions.sort((a, b) => a.question.compareTo(b.question));
+        questions.sort((a, b) => a.question.compareTo(b.question));
         }
       } else {
         // No questions exist, generate them
@@ -800,24 +800,24 @@ Important:
       // Update test question count
       if (!isClosed) {
         final testSnapshot = await databaseRef!.child('tests').child(testId).get();
-        if (testSnapshot.exists) {
+      if (testSnapshot.exists) {
           final testData = Map<String, dynamic>.from(
               testSnapshot.value as Map<dynamic, dynamic>);
           final currentCount = testData['questionCount'] ?? 0;
           if (currentCount != questions.length) {
             await databaseRef!.child('tests').child(testId).update({
-              'questionCount': questions.length,
-            });
+          'questionCount': questions.length,
+        });
           }
         }
       }
     } catch (e) {
       if (!isClosed) {
-        Get.snackbar('Error', 'Failed to load questions: $e');
+      Get.snackbar('Error', 'Failed to load questions: $e');
       }
     } finally {
       if (!isClosed) {
-        isLoadingQuestions.value = false;
+      isLoadingQuestions.value = false;
       }
     }
   }
@@ -830,10 +830,10 @@ Important:
   ) async {
     if (apiKey == 'YOUR_GEMINI_API_KEY') {
       if (!isClosed) {
-        Get.snackbar(
-          'API Key Required',
-          'Please add your Gemini API key in blog_post_controller.dart',
-        );
+      Get.snackbar(
+        'API Key Required',
+        'Please add your Gemini API key in blog_post_controller.dart',
+      );
       }
       throw Exception('API Key Required'); // Throw instead of return
     }
@@ -1114,7 +1114,7 @@ Important:
       await databaseRef!.child('tests').child(testId).update({
         'questionCount': savedCount,
       });
-      
+
       // Reload the specific test from Firebase for real-time update
       if (!isClosed) {
         final testSnapshot = await databaseRef!.child('tests').child(testId).get();
@@ -1148,7 +1148,7 @@ Important:
       rethrow; // Re-throw so parent can handle
     } finally {
       if (!isClosed) {
-        isGeneratingQuestions.value = false;
+      isGeneratingQuestions.value = false;
       }
     }
   }
@@ -1174,12 +1174,12 @@ Important:
       }
 
       if (!isClosed) {
-        loadQuestions(question.testId);
-        Get.snackbar('Success', 'Question saved successfully!');
+      loadQuestions(question.testId);
+      Get.snackbar('Success', 'Question saved successfully!');
       }
     } catch (e) {
       if (!isClosed) {
-        Get.snackbar('Error', 'Failed to save question: $e');
+      Get.snackbar('Error', 'Failed to save question: $e');
       }
     }
   }
@@ -1206,15 +1206,15 @@ Important:
       }
 
       if (!isClosed) {
-        Get.snackbar('Success', 'Question deleted successfully!');
-        loadQuestions(testId);
+      Get.snackbar('Success', 'Question deleted successfully!');
+      loadQuestions(testId);
       }
     } catch (e) {
       if (!isClosed) {
-        Get.snackbar('Error', 'Failed to delete question: $e');
-      }
+      Get.snackbar('Error', 'Failed to delete question: $e');
     }
   }
+}
 
   // Create multiple tests WITHOUT questions (questions will be generated on-demand)
   Future<void> createTestsWithQuestions(
@@ -1341,19 +1341,19 @@ Important:
   void _showTestCountDialog(BlogPostController controller, TopicModel topic) {
     final selectedTestCount = ValueNotifier<int>(5);
     
-    Get.dialog(
+                                    Get.dialog(
       Dialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
         child: Container(
           padding: EdgeInsets.all(24),
-          child: Column(
+      child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
+        children: [
+          Container(
                 padding: EdgeInsets.all(16),
-                decoration: BoxDecoration(
+            decoration: BoxDecoration(
                   color: primaryColor.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
@@ -1366,9 +1366,9 @@ Important:
               SizedBox(height: 16),
               Text(
                 'Create Tests',
-                style: TextStyle(
+                      style: TextStyle(
                   fontSize: 20,
-                  fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.bold,
                   color: Colors.black,
                 ),
               ),
@@ -1409,23 +1409,23 @@ Important:
               SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
+            children: [
+                        TextButton(
                     onPressed: () {
                       selectedTestCount.dispose();
                       Get.back();
                     },
-                    child: Text('Cancel'),
-                  ),
+                          child: Text('Cancel'),
+                        ),
                   SizedBox(width: 12),
                   ValueListenableBuilder<int>(
                     valueListenable: selectedTestCount,
                     builder: (context, testCount, child) {
                       return ElevatedButton(
-                        onPressed: () {
+                          onPressed: () {
                           final count = testCount;
                           selectedTestCount.dispose();
-                          Get.back();
+                            Get.back();
                           
                           controller.createTestsWithQuestions(
                             topic.id,
@@ -1443,11 +1443,11 @@ Important:
                           ),
                         ),
                         child: Text('Create Tests'),
-                      );
-                    },
-                  ),
-                ],
+                  );
+                },
               ),
+            ],
+          ),
             ],
           ),
         ),
@@ -1468,31 +1468,31 @@ Important:
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: EdgeInsets.all(16),
-        decoration: BoxDecoration(
+              decoration: BoxDecoration(
           color: isSelected ? Colors.purple.withOpacity(0.1) : Colors.grey.shade50,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
+                border: Border.all(
             color: isSelected ? Colors.purple : Colors.grey.shade300,
             width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: isSelected ? Colors.purple : Colors.grey.shade300,
-                shape: BoxShape.circle,
+                ),
               ),
+              child: Row(
+                children: [
+                  Container(
+              padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                color: isSelected ? Colors.purple : Colors.grey.shade300,
+                      shape: BoxShape.circle,
+                    ),
               child: Icon(
                 icon,
-                color: Colors.white,
+                          color: Colors.white,
                 size: 20,
               ),
             ),
             SizedBox(width: 16),
-            Expanded(
-              child: Text(
+                  Expanded(
+                    child: Text(
                 label,
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
